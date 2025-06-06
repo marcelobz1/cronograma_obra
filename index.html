@@ -88,7 +88,8 @@
         <header class="text-center mb-12">
             <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #073B4C;">Cronograma Interativo da Requalificação de Cobertura</h1>
             <p class="text-lg" style="color: #118AB2;">Acompanhe e marque o progresso da obra de Joaquim Mateus.</p>
-            <p id="userIdDisplay" class="text-xs text-gray-500 mt-2"></p>
+            <!-- A ID do utilizador já não é relevante para o público, pode ser removida se desejar -->
+            <!-- <p id="userIdDisplay" class="text-xs text-gray-500 mt-2"></p> -->
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
@@ -231,10 +232,7 @@
         const db = getFirestore(app);
         setLogLevel('debug'); // Firestore logging for development
 
-        // --- O RESTO DO CÓDIGO PERMANECE IGUAL ---
-
         // Global variables
-        let userId = null;
         let overallProgressChart = null;
         const FONT_COLOR = '#073B4C';
         const PALETTE = {
@@ -257,25 +255,18 @@
         // This object will store the completion status fetched from Firestore
         let phaseCompletionStatus = {}; 
         
-        // This variable is needed to make the code work, but we will keep it simple
-        const appId = 'interactive-timeline-app'; 
-
         // DOM Elements
         const loadingOverlay = document.getElementById('loadingOverlay');
-        const userIdDisplay = document.getElementById('userIdDisplay');
 
         // Authenticate User and Initialize App
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                userId = user.uid;
-                console.log("User authenticated with UID:", userId);
-                if(userIdDisplay) userIdDisplay.textContent = `ID Utilizador: ${userId}`;
+                console.log("User authenticated with UID:", user.uid);
                 await initializeAppData();
             } else {
                 console.log("User not signed in, attempting anonymous sign in.");
                 try {
                     await signInAnonymously(auth);
-                    // onAuthStateChanged will be triggered again
                 } catch (error) {
                     console.error("Error during sign-in:", error);
                     if(loadingOverlay) loadingOverlay.textContent = "Erro ao autenticar.";
@@ -285,38 +276,29 @@
 
         // Initialize App Data (after authentication)
         async function initializeAppData() {
-            console.log("Initializing app data for user:", userId);
-            if (!userId) {
-                console.error("UserID is not available. Cannot initialize app data.");
-                if(loadingOverlay) loadingOverlay.textContent = "Erro: ID de utilizador não disponível.";
-                return;
-            }
+            console.log("Initializing shared app data.");
             
             setupEventListeners();
             initializeOverallProgressChart();
 
-            // Initialize phaseCompletionStatus with defaults
             phases.forEach(phase => {
-                phaseCompletionStatus[phase.id] = { completed: false, ...phase }; // Store phase details along with completion
+                phaseCompletionStatus[phase.id] = { completed: false, ...phase };
             });
             
             // Fetch initial status for all phases using onSnapshot for real-time updates
             phases.forEach(phase => {
-                const phaseDocRef = doc(db, 'artifacts', appId, 'users', userId, 'construction_phases', phase.id);
+                // **ALTERAÇÃO #1: Usar o caminho partilhado**
+                const phaseDocRef = doc(db, 'timelines', 'co-0000-2025-antas', 'phases', phase.id);
                 onSnapshot(phaseDocRef, (docSnap) => {
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         phaseCompletionStatus[phase.id].completed = data.completed || false;
-                        console.log(`Status for ${phase.id}:`, phaseCompletionStatus[phase.id].completed);
                     } else {
-                        // If document doesn't exist, assume not completed
                         phaseCompletionStatus[phase.id].completed = false;
-                        console.log(`No status found for ${phase.id}, defaulting to false.`);
                     }
                     updatePhaseUI(phase.id);
-                    updateOverallProgressChart(); // Update chart whenever any phase status changes
+                    updateOverallProgressChart(); 
                     
-                    // Hide loading overlay after first data load
                     if(loadingOverlay && loadingOverlay.style.display !== 'none') {
                          loadingOverlay.style.display = 'none';
                     }
@@ -337,35 +319,29 @@
                         const isCompleted = event.target.checked;
                         await updatePhaseStatusInFirestore(phaseId, isCompleted);
                     });
-                } else {
-                    console.warn(`Checkbox for phase ${phase.id} not found.`);
                 }
             });
         }
         
         // Update Phase Status in Firestore
         async function updatePhaseStatusInFirestore(phaseId, isCompleted) {
-            if (!userId) {
-                console.error("UserID is null, cannot update Firestore.");
-                alert("Erro: Utilizador não autenticado. Não é possível guardar alterações."); // Consider a custom modal
-                return;
-            }
             const currentPhase = phases.find(p => p.id === phaseId);
             if (!currentPhase) {
                 console.error("Phase definition not found for ID:", phaseId);
                 return;
             }
-            const phaseDocRef = doc(db, 'artifacts', appId, 'users', userId, 'construction_phases', phaseId);
+            // **ALTERAÇÃO #2: Usar o mesmo caminho partilhado para escrever**
+            const phaseDocRef = doc(db, 'timelines', 'co-0000-2025-antas', 'phases', phase.id);
             try {
                 await setDoc(phaseDocRef, { 
                     completed: isCompleted,
-                    name: currentPhase.name, // Storing name and duration for context if needed elsewhere
+                    name: currentPhase.name,
                     duration_days: currentPhase.duration_days 
-                }, { merge: true }); // Merge true to avoid overwriting other fields if any
+                }, { merge: true });
                 console.log(`Phase ${phaseId} status updated to ${isCompleted} in Firestore.`);
             } catch (error) {
                 console.error("Error updating phase status in Firestore:", error);
-                alert("Erro ao guardar alteração. Tente novamente."); // Consider a custom modal
+                alert("Erro ao guardar alteração. Tente novamente.");
             }
         }
 
@@ -384,15 +360,14 @@
 
                 if (phaseData.completed) {
                     card.classList.add('completed-phase');
-                    card.style.backgroundColor = PALETTE.completedGreenBg; // Specific completed background
-                    if(titleElement) titleElement.style.color = PALETTE.darkBlue; // Ensure title is readable
-                    if(dateElement) dateElement.classList.add('timeline-date'); // Ensure class for specific styling
+                    card.style.backgroundColor = PALETTE.completedGreenBg;
+                    if(titleElement) titleElement.style.color = PALETTE.darkBlue;
+                    if(dateElement) dateElement.classList.add('timeline-date');
                     if(descriptionElement) descriptionElement.classList.add('timeline-description');
-
                 } else {
                     card.classList.remove('completed-phase');
-                    card.style.backgroundColor = phaseData.defaultColor; // Revert to default color
-                     if(titleElement) titleElement.className = `font-bold ${phaseData.textColor} text-lg`; // Reset classes
+                    card.style.backgroundColor = phaseData.defaultColor;
+                     if(titleElement) titleElement.className = `font-bold ${phaseData.textColor} text-lg`;
                      if(dateElement) dateElement.className = `text-sm leading-snug tracking-wide ${phaseData.dateColor} timeline-date`;
                      if(descriptionElement) descriptionElement.className = `text-xs mt-2 ${phaseData.descColor} timeline-description`;
                 }
@@ -412,7 +387,7 @@
                     labels: ['Dias Concluídos', 'Dias Pendentes'],
                     datasets: [{
                         label: 'Progresso da Obra',
-                        data: [0, totalDays], // Initial state: 0 completed, all pending
+                        data: [0, totalDays],
                         backgroundColor: [PALETTE.green, PALETTE.red],
                         borderColor: '#FFFFFF',
                         borderWidth: 2,
