@@ -88,8 +88,6 @@
         <header class="text-center mb-12">
             <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #073B4C;">Cronograma Interativo da Requalificação de Cobertura</h1>
             <p class="text-lg" style="color: #118AB2;">Acompanhe e marque o progresso da obra de Joaquim Mateus.</p>
-            <!-- A ID do utilizador já não é relevante para o público, pode ser removida se desejar -->
-            <!-- <p id="userIdDisplay" class="text-xs text-gray-500 mt-2"></p> -->
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
@@ -252,13 +250,11 @@
             { id: 'phase_3', name: 'Cobertura e Acessórios', duration_days: 7, defaultColor: '#FFD166', textColor: 'text-gray-800', dateColor: 'text-gray-700', descColor: 'text-gray-600'},
             { id: 'phase_4', name: 'Remates Finais', duration_days: 13, defaultColor: '#FF6B6B', textColor: 'text-white', dateColor: 'text-white', descColor: 'text-gray-200'}
         ];
-        // This object will store the completion status fetched from Firestore
+        
         let phaseCompletionStatus = {}; 
         
-        // DOM Elements
         const loadingOverlay = document.getElementById('loadingOverlay');
 
-        // Authenticate User and Initialize App
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 console.log("User authenticated with UID:", user.uid);
@@ -274,7 +270,6 @@
             }
         });
 
-        // Initialize App Data (after authentication)
         async function initializeAppData() {
             console.log("Initializing shared app data.");
             
@@ -285,9 +280,8 @@
                 phaseCompletionStatus[phase.id] = { completed: false, ...phase };
             });
             
-            // Fetch initial status for all phases using onSnapshot for real-time updates
             phases.forEach(phase => {
-                // **ALTERAÇÃO #1: Usar o caminho partilhado**
+                // CORREÇÃO: Usar o caminho partilhado para ler os dados.
                 const phaseDocRef = doc(db, 'timelines', 'co-0000-2025-antas', 'phases', phase.id);
                 onSnapshot(phaseDocRef, (docSnap) => {
                     if (docSnap.exists()) {
@@ -309,7 +303,6 @@
             });
         }
 
-        // Setup Event Listeners for Checkboxes
         function setupEventListeners() {
             phases.forEach(phase => {
                 const checkbox = document.getElementById(`checkbox_${phase.id}`);
@@ -323,14 +316,13 @@
             });
         }
         
-        // Update Phase Status in Firestore
         async function updatePhaseStatusInFirestore(phaseId, isCompleted) {
             const currentPhase = phases.find(p => p.id === phaseId);
             if (!currentPhase) {
                 console.error("Phase definition not found for ID:", phaseId);
                 return;
             }
-            // **ALTERAÇÃO #2: Usar o mesmo caminho partilhado para escrever**
+            // CORREÇÃO: Usar o mesmo caminho partilhado para escrever os dados.
             const phaseDocRef = doc(db, 'timelines', 'co-0000-2025-antas', 'phases', phase.id);
             try {
                 await setDoc(phaseDocRef, { 
@@ -345,7 +337,6 @@
             }
         }
 
-        // Update UI for a specific phase
         function updatePhaseUI(phaseId) {
             const phaseData = phaseCompletionStatus[phaseId];
             const timelineItem = document.getElementById(`timelineItem_${phaseId}`);
@@ -376,7 +367,6 @@
             }
         }
 
-        // Initialize Overall Progress Chart
         function initializeOverallProgressChart() {
             const ctx = document.getElementById('overallProgressChart').getContext('2d');
             const totalDays = phases.reduce((sum, phase) => sum + phase.duration_days, 0);
@@ -421,7 +411,6 @@
             });
         }
 
-        // Update Overall Progress Chart
         function updateOverallProgressChart() {
             if (!overallProgressChart) return;
 
