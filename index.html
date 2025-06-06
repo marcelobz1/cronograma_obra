@@ -140,8 +140,6 @@
                 <div class="relative wrap overflow-hidden p-4 h-full">
                     <div class="border-2-2 absolute border-opacity-20 border-gray-700 h-full border" style="left: 50%; border-color: #073B4C; opacity: 0.5;"></div>
                     
-                    <!-- Timeline Items will be populated by JavaScript or use this as a template -->
-                    <!-- Example for Phase 1 -->
                     <div id="timelineItem_phase_1" class="mb-8 flex justify-between items-center w-full right-timeline">
                         <div class="order-1 w-5/12"></div>
                         <div class="z-20 flex items-center order-1 bg-gray-800 shadow-xl w-8 h-8 rounded-full" style="background-color: #073B4C;">
@@ -213,19 +211,27 @@
     <script type="module">
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Configuration (Provided by Canvas Environment)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'interactive-timeline-app'; // Default app ID if not provided
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO_KEY", authDomain: "DEMO.firebaseapp.com", projectId: "DEMO_PROJECT" }; // Demo config for local testing
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyA8qf6B5pZZuVg3f5jAs8m9AHegOXQx2EE",
+          authDomain: "co-0000-2025-antas.firebaseapp.com",
+          projectId: "co-0000-2025-antas",
+          storageBucket: "co-0000-2025-antas.firebasestorage.app",
+          messagingSenderId: "437139961275",
+          appId: "1:437139961275:web:7eb557b650c629e296c09e",
+          measurementId: "G-LER9KFJ652"
+        };
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         setLogLevel('debug'); // Firestore logging for development
+
+        // --- O RESTO DO CÓDIGO PERMANECE IGUAL ---
 
         // Global variables
         let userId = null;
@@ -250,6 +256,9 @@
         ];
         // This object will store the completion status fetched from Firestore
         let phaseCompletionStatus = {}; 
+        
+        // This variable is needed to make the code work, but we will keep it simple
+        const appId = 'interactive-timeline-app'; 
 
         // DOM Elements
         const loadingOverlay = document.getElementById('loadingOverlay');
@@ -263,15 +272,10 @@
                 if(userIdDisplay) userIdDisplay.textContent = `ID Utilizador: ${userId}`;
                 await initializeAppData();
             } else {
-                console.log("User not signed in, attempting anonymous sign in or custom token.");
+                console.log("User not signed in, attempting anonymous sign in.");
                 try {
-                    if (initialAuthToken) {
-                        await signInWithCustomToken(auth, initialAuthToken);
-                        // onAuthStateChanged will be triggered again
-                    } else {
-                        await signInAnonymously(auth);
-                        // onAuthStateChanged will be triggered again
-                    }
+                    await signInAnonymously(auth);
+                    // onAuthStateChanged will be triggered again
                 } catch (error) {
                     console.error("Error during sign-in:", error);
                     if(loadingOverlay) loadingOverlay.textContent = "Erro ao autenticar.";
@@ -308,18 +312,13 @@
                         // If document doesn't exist, assume not completed
                         phaseCompletionStatus[phase.id].completed = false;
                         console.log(`No status found for ${phase.id}, defaulting to false.`);
-                        // Optionally, create the document with default false status
-                        // setDoc(phaseDocRef, { completed: false, name: phase.name, duration_days: phase.duration_days });
                     }
                     updatePhaseUI(phase.id);
                     updateOverallProgressChart(); // Update chart whenever any phase status changes
                     
-                    // Hide loading overlay after first data load for all phases (simplistic check)
-                    if(Object.keys(phaseCompletionStatus).length === phases.length && loadingOverlay) {
-                         // Check if all listeners are set up, then hide.
-                         // This needs a more robust way to check if all snapshots have initially loaded.
-                         // For now, hide after the first snapshot callback for simplicity.
-                         if(loadingOverlay) loadingOverlay.style.display = 'none';
+                    // Hide loading overlay after first data load
+                    if(loadingOverlay && loadingOverlay.style.display !== 'none') {
+                         loadingOverlay.style.display = 'none';
                     }
                 }, (error) => {
                     console.error(`Error listening to phase ${phase.id}:`, error);
