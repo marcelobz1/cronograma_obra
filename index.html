@@ -281,7 +281,6 @@
             });
             
             phases.forEach(phase => {
-                // CORREÇÃO: Usar o caminho partilhado para ler os dados.
                 const phaseDocRef = doc(db, 'timelines', 'co-0000-2025-antas', 'phases', phase.id);
                 onSnapshot(phaseDocRef, (docSnap) => {
                     if (docSnap.exists()) {
@@ -322,8 +321,8 @@
                 console.error("Phase definition not found for ID:", phaseId);
                 return;
             }
-            // CORREÇÃO: Usar o mesmo caminho partilhado para escrever os dados.
-            const phaseDocRef = doc(db, 'timelines', 'co-0000-2025-antas', 'phases', phase.id);
+            // CORREÇÃO: Usar o 'phaseId' da função em vez de 'phase.id' que não está definido aqui.
+            const phaseDocRef = doc(db, 'timelines', 'co-0000-2025-antas', 'phases', phaseId);
             try {
                 await setDoc(phaseDocRef, { 
                     completed: isCompleted,
