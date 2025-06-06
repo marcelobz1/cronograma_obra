@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma Interativo da Obra</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px; /* Adjusted height for progress chart */
+            max-height: 45vh;
+        }
+        .timeline-card {
+            transition: background-color 0.3s ease, opacity 0.3s ease;
+        }
+        .completed-phase {
+            background-color: #D1FAE5 !important; /* Light green for completed phase background */
+            opacity: 0.8;
+        }
+        .completed-phase h3, .completed-phase p:not(.text-xs) {
+           /* text-decoration: line-through; */ /* Optional: can be too distracting */
+        }
+        .completed-phase .timeline-date {
+             color: #047857 !important; /* Darker green for date text */
+        }
+         .completed-phase .timeline-description {
+             color: #065F46 !important; /* Darker green for description text */
+        }
+
+        /* Custom checkbox style */
+        .custom-checkbox {
+            appearance: none;
+            background-color: #fff;
+            border: 2px solid #6B7280; /* gray-500 */
+            border-radius: 0.25rem; /* rounded */
+            width: 1.5rem; /* h-6 w-6 */
+            height: 1.5rem;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .custom-checkbox:checked {
+            background-color: #06D6A0; /* PALETTE.green */
+            border-color: #06D6A0;
+        }
+        .custom-checkbox:checked::after {
+            content: '✔';
+            font-size: 1rem;
+            color: #fff;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 1.2rem;
+            color: #073B4C;
+        }
+    </style>
+</head>
+<body class="bg-gray-100" style="background-color: #F0F4F8;">
+    <div id="loadingOverlay" class="loading-overlay">
+        <p>A carregar dados...</p>
+    </div>
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold mb-2" style="color: #073B4C;">Cronograma Interativo da Requalificação de Cobertura</h1>
+            <p class="text-lg" style="color: #118AB2;">Acompanhe e marque o progresso da obra de Joaquim Mateus.</p>
+            <p id="userIdDisplay" class="text-xs text-gray-500 mt-2"></p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                <p class="text-sm font-semibold uppercase" style="color: #118AB2;">Duração Total Estimada</p>
+                <p class="text-4xl font-bold" style="color: #073B4C;">44 dias úteis</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6 text-center">
+                <p class="text-sm font-semibold uppercase" style="color: #118AB2;">Área de Intervenção</p>
+                <p class="text-4xl font-bold" style="color: #073B4C;">210 m²</p>
+            </div>
+        </div>
+
+        <main class="space-y-12">
+            
+            <section id="overall-progress" class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-1" style="color: #073B4C;">Progresso Geral da Obra</h2>
+                <p class="text-md mb-6" style="color: #118AB2;">Visualize o avanço total da obra com base nas fases concluídas. O gráfico mostra os dias úteis concluídos versus os dias pendentes.</p>
+                <div class="chart-container mx-auto max-w-lg">
+                    <canvas id="overallProgressChart"></canvas>
+                </div>
+            </section>
+
+            <section id="key-materials" class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-1" style="color: #073B4C;">Materiais e Especificações Chave</h2>
+                <p class="text-md mb-6" style="color: #118AB2;">A qualidade e durabilidade da obra dependem dos materiais aplicados.</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div class="p-4 rounded-lg" style="background-color: #F0F4F8;">
+                        <span class="text-4xl">🏠</span>
+                        <h3 class="font-bold text-lg mt-2" style="color: #073B4C;">Telha Marselha UM</h3>
+                        <p class="text-sm" style="color: #118AB2;">Estanqueidade e estética tradicional (garantia 35 anos).</p>
+                    </div>
+                    <div class="p-4 rounded-lg" style="background-color: #F0F4F8;">
+                        <span class="text-4xl">🛡️</span>
+                        <h3 class="font-bold text-lg mt-2" style="color: #073B4C;">Subtelha Onduline</h3>
+                        <p class="text-sm" style="color: #118AB2;">Segunda barreira contra infiltrações.</p>
+                    </div>
+                    <div class="p-4 rounded-lg" style="background-color: #F0F4F8;">
+                        <span class="text-4xl">☀️</span>
+                        <h3 class="font-bold text-lg mt-2" style="color: #073B4C;">Janelas Velux (2 un.)</h3>
+                        <p class="text-sm" style="color: #118AB2;">Iluminação natural e ventilação.</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="timeline" class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold mb-1" style="color: #073B4C;">Cronograma Detalhado da Obra</h2>
+                <p class="text-md mb-8" style="color: #118AB2;">Marque cada fase como concluída. Início: <strong>16/06/2025</strong>, Conclusão Prevista: <strong>14/08/2025</strong>.</p>
+                <div class="relative wrap overflow-hidden p-4 h-full">
+                    <div class="border-2-2 absolute border-opacity-20 border-gray-700 h-full border" style="left: 50%; border-color: #073B4C; opacity: 0.5;"></div>
+                    
+                    <!-- Timeline Items will be populated by JavaScript or use this as a template -->
+                    <!-- Example for Phase 1 -->
+                    <div id="timelineItem_phase_1" class="mb-8 flex justify-between items-center w-full right-timeline">
+                        <div class="order-1 w-5/12"></div>
+                        <div class="z-20 flex items-center order-1 bg-gray-800 shadow-xl w-8 h-8 rounded-full" style="background-color: #073B4C;">
+                            <h1 class="mx-auto font-semibold text-lg text-white">1</h1>
+                        </div>
+                        <div class="order-1 rounded-lg shadow-md w-5/12 px-6 py-4 timeline-card" style="background-color: #118AB2;">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-white text-lg">Preparação e Demolição (16 dias)</h3>
+                                <input type="checkbox" id="checkbox_phase_1" data-phase-id="phase_1" class="custom-checkbox">
+                            </div>
+                            <p class="text-sm leading-snug tracking-wide text-gray-200 timeline-date">16/06/2025 - 07/07/2025</p>
+                            <p class="text-xs mt-2 text-gray-300 timeline-description">Montagem de estaleiro, remoção de telha e ripa, substituição de barrotes.</p>
+                        </div>
+                    </div>
+
+                    <div id="timelineItem_phase_2" class="mb-8 flex justify-between flex-row-reverse items-center w-full left-timeline">
+                        <div class="order-1 w-5/12"></div>
+                        <div class="z-20 flex items-center order-1 bg-gray-800 shadow-xl w-8 h-8 rounded-full" style="background-color: #073B4C;">
+                            <h1 class="mx-auto text-white font-semibold text-lg">2</h1>
+                        </div>
+                        <div class="order-1 rounded-lg shadow-md w-5/12 px-6 py-4 timeline-card" style="background-color: #06D6A0;">
+                             <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-white text-lg">Estrutura e Base (8 dias)</h3>
+                                <input type="checkbox" id="checkbox_phase_2" data-phase-id="phase_2" class="custom-checkbox">
+                            </div>
+                            <p class="text-sm leading-snug tracking-wide text-gray-800 timeline-date">08/07/2025 - 17/07/2025</p>
+                            <p class="text-xs mt-2 text-gray-700 timeline-description">Aplicação de subtelha Onduline e nova ripa metálica.</p>
+                        </div>
+                    </div>
+
+                    <div id="timelineItem_phase_3" class="mb-8 flex justify-between items-center w-full right-timeline">
+                        <div class="order-1 w-5/12"></div>
+                        <div class="z-20 flex items-center order-1 bg-gray-800 shadow-xl w-8 h-8 rounded-full" style="background-color: #073B4C;">
+                            <h1 class="mx-auto font-semibold text-lg text-white">3</h1>
+                        </div>
+                        <div class="order-1 rounded-lg shadow-md w-5/12 px-6 py-4 timeline-card" style="background-color: #FFD166;">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-gray-800 text-lg">Cobertura e Acessórios (7 dias)</h3>
+                                 <input type="checkbox" id="checkbox_phase_3" data-phase-id="phase_3" class="custom-checkbox">
+                            </div>
+                            <p class="text-sm leading-snug tracking-wide text-gray-700 timeline-date">18/07/2025 - 28/07/2025</p>
+                            <p class="text-xs mt-2 text-gray-600 timeline-description">Instalação Velux, tubos de respiro, assentamento telha Marselha.</p>
+                        </div>
+                    </div>
+                    
+                    <div id="timelineItem_phase_4" class="mb-8 flex justify-between flex-row-reverse items-center w-full left-timeline">
+                        <div class="order-1 w-5/12"></div>
+                        <div class="z-20 flex items-center order-1 bg-gray-800 shadow-xl w-8 h-8 rounded-full" style="background-color: #073B4C;">
+                            <h1 class="mx-auto text-white font-semibold text-lg">4</h1>
+                        </div>
+                         <div class="order-1 rounded-lg shadow-md w-5/12 px-6 py-4 timeline-card" style="background-color: #FF6B6B;">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-white text-lg">Remates Finais (13 dias)</h3>
+                                <input type="checkbox" id="checkbox_phase_4" data-phase-id="phase_4" class="custom-checkbox">
+                            </div>
+                            <p class="text-sm leading-snug tracking-wide text-white timeline-date">29/07/2025 - 14/08/2025</p>
+                            <p class="text-xs mt-2 text-gray-200 timeline-description">Rufos, beirado, caleiras, desmobilização.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-12 py-6 border-t border-gray-300">
+            <p class="text-sm" style="color: #073B4C;">Infográfico Interativo. Dados base JOMANOR AGR. E IMOBILIÁRIA, LDA (20/12/2024). Cronograma atualizado a 05/06/2025.</p>
+        </footer>
+    </div>
+
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase Configuration (Provided by Canvas Environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'interactive-timeline-app'; // Default app ID if not provided
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO_KEY", authDomain: "DEMO.firebaseapp.com", projectId: "DEMO_PROJECT" }; // Demo config for local testing
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        setLogLevel('debug'); // Firestore logging for development
+
+        // Global variables
+        let userId = null;
+        let overallProgressChart = null;
+        const FONT_COLOR = '#073B4C';
+        const PALETTE = {
+            red: '#FF6B6B',       // For pending tasks or alerts
+            yellow: '#FFD166',    // For in-progress or attention
+            green: '#06D6A0',     // For completed tasks
+            blue: '#118AB2',      // Primary action or info
+            darkBlue: '#073B4C',  // Text and titles
+            lightGray: '#F0F4F8', // Backgrounds
+            completedGreenBg: '#D1FAE5' // Background for completed cards
+        };
+
+        // Project Phases Definition
+        const phases = [
+            { id: 'phase_1', name: 'Preparação e Demolição', duration_days: 16, defaultColor: '#118AB2', textColor: 'text-white', dateColor: 'text-gray-200', descColor: 'text-gray-300' },
+            { id: 'phase_2', name: 'Estrutura e Base', duration_days: 8, defaultColor: '#06D6A0', textColor: 'text-white', dateColor: 'text-gray-800', descColor: 'text-gray-700'},
+            { id: 'phase_3', name: 'Cobertura e Acessórios', duration_days: 7, defaultColor: '#FFD166', textColor: 'text-gray-800', dateColor: 'text-gray-700', descColor: 'text-gray-600'},
+            { id: 'phase_4', name: 'Remates Finais', duration_days: 13, defaultColor: '#FF6B6B', textColor: 'text-white', dateColor: 'text-white', descColor: 'text-gray-200'}
+        ];
+        // This object will store the completion status fetched from Firestore
+        let phaseCompletionStatus = {}; 
+
+        // DOM Elements
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+
+        // Authenticate User and Initialize App
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                userId = user.uid;
+                console.log("User authenticated with UID:", userId);
+                if(userIdDisplay) userIdDisplay.textContent = `ID Utilizador: ${userId}`;
+                await initializeAppData();
+            } else {
+                console.log("User not signed in, attempting anonymous sign in or custom token.");
+                try {
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        // onAuthStateChanged will be triggered again
+                    } else {
+                        await signInAnonymously(auth);
+                        // onAuthStateChanged will be triggered again
+                    }
+                } catch (error) {
+                    console.error("Error during sign-in:", error);
+                    if(loadingOverlay) loadingOverlay.textContent = "Erro ao autenticar.";
+                }
+            }
+        });
+
+        // Initialize App Data (after authentication)
+        async function initializeAppData() {
+            console.log("Initializing app data for user:", userId);
+            if (!userId) {
+                console.error("UserID is not available. Cannot initialize app data.");
+                if(loadingOverlay) loadingOverlay.textContent = "Erro: ID de utilizador não disponível.";
+                return;
+            }
+            
+            setupEventListeners();
+            initializeOverallProgressChart();
+
+            // Initialize phaseCompletionStatus with defaults
+            phases.forEach(phase => {
+                phaseCompletionStatus[phase.id] = { completed: false, ...phase }; // Store phase details along with completion
+            });
+            
+            // Fetch initial status for all phases using onSnapshot for real-time updates
+            phases.forEach(phase => {
+                const phaseDocRef = doc(db, 'artifacts', appId, 'users', userId, 'construction_phases', phase.id);
+                onSnapshot(phaseDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        phaseCompletionStatus[phase.id].completed = data.completed || false;
+                        console.log(`Status for ${phase.id}:`, phaseCompletionStatus[phase.id].completed);
+                    } else {
+                        // If document doesn't exist, assume not completed
+                        phaseCompletionStatus[phase.id].completed = false;
+                        console.log(`No status found for ${phase.id}, defaulting to false.`);
+                        // Optionally, create the document with default false status
+                        // setDoc(phaseDocRef, { completed: false, name: phase.name, duration_days: phase.duration_days });
+                    }
+                    updatePhaseUI(phase.id);
+                    updateOverallProgressChart(); // Update chart whenever any phase status changes
+                    
+                    // Hide loading overlay after first data load for all phases (simplistic check)
+                    if(Object.keys(phaseCompletionStatus).length === phases.length && loadingOverlay) {
+                         // Check if all listeners are set up, then hide.
+                         // This needs a more robust way to check if all snapshots have initially loaded.
+                         // For now, hide after the first snapshot callback for simplicity.
+                         if(loadingOverlay) loadingOverlay.style.display = 'none';
+                    }
+                }, (error) => {
+                    console.error(`Error listening to phase ${phase.id}:`, error);
+                    if(loadingOverlay) loadingOverlay.textContent = "Erro ao carregar dados das fases.";
+                });
+            });
+        }
+
+        // Setup Event Listeners for Checkboxes
+        function setupEventListeners() {
+            phases.forEach(phase => {
+                const checkbox = document.getElementById(`checkbox_${phase.id}`);
+                if (checkbox) {
+                    checkbox.addEventListener('change', async (event) => {
+                        const phaseId = event.target.dataset.phaseId;
+                        const isCompleted = event.target.checked;
+                        await updatePhaseStatusInFirestore(phaseId, isCompleted);
+                    });
+                } else {
+                    console.warn(`Checkbox for phase ${phase.id} not found.`);
+                }
+            });
+        }
+        
+        // Update Phase Status in Firestore
+        async function updatePhaseStatusInFirestore(phaseId, isCompleted) {
+            if (!userId) {
+                console.error("UserID is null, cannot update Firestore.");
+                alert("Erro: Utilizador não autenticado. Não é possível guardar alterações."); // Consider a custom modal
+                return;
+            }
+            const currentPhase = phases.find(p => p.id === phaseId);
+            if (!currentPhase) {
+                console.error("Phase definition not found for ID:", phaseId);
+                return;
+            }
+            const phaseDocRef = doc(db, 'artifacts', appId, 'users', userId, 'construction_phases', phaseId);
+            try {
+                await setDoc(phaseDocRef, { 
+                    completed: isCompleted,
+                    name: currentPhase.name, // Storing name and duration for context if needed elsewhere
+                    duration_days: currentPhase.duration_days 
+                }, { merge: true }); // Merge true to avoid overwriting other fields if any
+                console.log(`Phase ${phaseId} status updated to ${isCompleted} in Firestore.`);
+            } catch (error) {
+                console.error("Error updating phase status in Firestore:", error);
+                alert("Erro ao guardar alteração. Tente novamente."); // Consider a custom modal
+            }
+        }
+
+        // Update UI for a specific phase
+        function updatePhaseUI(phaseId) {
+            const phaseData = phaseCompletionStatus[phaseId];
+            const timelineItem = document.getElementById(`timelineItem_${phaseId}`);
+            const checkbox = document.getElementById(`checkbox_${phaseId}`);
+            const card = timelineItem ? timelineItem.querySelector('.timeline-card') : null;
+            
+            if (timelineItem && checkbox && card) {
+                checkbox.checked = phaseData.completed;
+                const titleElement = card.querySelector('h3');
+                const dateElement = card.querySelector('.timeline-date');
+                const descriptionElement = card.querySelector('.timeline-description');
+
+                if (phaseData.completed) {
+                    card.classList.add('completed-phase');
+                    card.style.backgroundColor = PALETTE.completedGreenBg; // Specific completed background
+                    if(titleElement) titleElement.style.color = PALETTE.darkBlue; // Ensure title is readable
+                    if(dateElement) dateElement.classList.add('timeline-date'); // Ensure class for specific styling
+                    if(descriptionElement) descriptionElement.classList.add('timeline-description');
+
+                } else {
+                    card.classList.remove('completed-phase');
+                    card.style.backgroundColor = phaseData.defaultColor; // Revert to default color
+                     if(titleElement) titleElement.className = `font-bold ${phaseData.textColor} text-lg`; // Reset classes
+                     if(dateElement) dateElement.className = `text-sm leading-snug tracking-wide ${phaseData.dateColor} timeline-date`;
+                     if(descriptionElement) descriptionElement.className = `text-xs mt-2 ${phaseData.descColor} timeline-description`;
+                }
+            } else {
+                console.warn(`UI elements for phase ${phaseId} not found.`);
+            }
+        }
+
+        // Initialize Overall Progress Chart
+        function initializeOverallProgressChart() {
+            const ctx = document.getElementById('overallProgressChart').getContext('2d');
+            const totalDays = phases.reduce((sum, phase) => sum + phase.duration_days, 0);
+
+            overallProgressChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Dias Concluídos', 'Dias Pendentes'],
+                    datasets: [{
+                        label: 'Progresso da Obra',
+                        data: [0, totalDays], // Initial state: 0 completed, all pending
+                        backgroundColor: [PALETTE.green, PALETTE.red],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 2,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: FONT_COLOR, font: { size: 14 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + ' dias úteis';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update Overall Progress Chart
+        function updateOverallProgressChart() {
+            if (!overallProgressChart) return;
+
+            let completedDays = 0;
+            phases.forEach(phase => {
+                if (phaseCompletionStatus[phase.id] && phaseCompletionStatus[phase.id].completed) {
+                    completedDays += phase.duration_days;
+                }
+            });
+            const totalDays = phases.reduce((sum, phase) => sum + phase.duration_days, 0);
+            const pendingDays = totalDays - completedDays;
+
+            overallProgressChart.data.datasets[0].data = [completedDays, pendingDays];
+            overallProgressChart.update();
+        }
+
+    </script>
+</body>
+</html>
